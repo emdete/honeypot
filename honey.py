@@ -4,14 +4,17 @@ from datetime import datetime
 from random import choice
 from signal import signal, SIGINT
 from subprocess import call
+import logging as log
+import sys
+
+FORMAT = '[%(asctime)s] [%(levelname)s] : %(message)s'
+log.basicConfig(stream=sys.stdout, level=log.DEBUG, format=FORMAT)
 
 def signal_handler(sig, frame):
 	print('Exiting...')
-	sys.exit(0)
+	exit(0)
 signal(SIGINT, signal_handler)
 
-
-OFFSET = 1000
 
 if 0:
 	import fakedns
@@ -29,63 +32,48 @@ if 0:
 			return response.make_packet()
 	fakedns.rules = Rules()
 
-	server = fakedns.ThreadedUDPServer(('127.0.0.1', int(OFFSET+53)), fakedns.UDPHandler)
-	server.daemon = True
-	server.serve_forever()
+	fake_dns = fakedns.ThreadedUDPServer(('127.0.0.1', int(OFFSET+53)), fakedns.UDPHandler)
+	fake_dns.daemon = True
+	fake_dns.serve_forever()
 	server_thread.join()
 
 if 1:
-	from dhcp import DhcpServer
-	# see https://tools.ietf.org/html/rfc2131
+	from dhcp_server import DHCP_Server
+	import threading
 
-	class Lease(object):
-		def __init__(self, client_id, server, address, netmask, broadcast_address):
-			self.client_id = client_id
-			self.client_ip = '0.0.0.0'
-			self.your_ip = address
-			self.next_server_ip = None
-			self.relay_agent_ip = None
-			self.lease_time = 86400 # 24h
-			self.renewal_time = 43200 # 12h
-			self.rebinding_time = 75600 # 21h
-			self.subnet_mask = netmask
-			self.broadcast_address = broadcast_address
-			self.dns = server
-			self.domain_name = 'localdomain'
-			self.timestamp = datetime.now()
-		def __str__(self):
-			return '{0.your_ip}'.format(self)
+	class FakeServer(object):
+		def __init__(self, server_ip, interface):
+			self.dhcp_server = None
+			self.dhcp_server = DHCP_Server(server_ip, interface)
+			self.dhcp_server.set_server_name('free')
+			self.dhcp_server.set_dns('172.16.0.1')
+			self.dhcp_server.set_server_lease_time(60*30)
+			self.server_thread = threading.Thread(target=self.dhcp_server.start_server)
+			self.server_thread.daemon = True
+			self.server_thread.start()
 
-	class LeaseDB(dict):
-		def __init__(self, server, network):
-			self.db = dict()
-			self.ips = {server: Lease(None, server, server, network.netmask, network.broadcast_address), }
-			self.server = server
-			self.network = network
-		def client_config(self, client_id, hostname, vendor_class, ):
-			if not client_id in self.db:
-				your_ip = choice(list(network.hosts()))
-				while your_ip in self.db:
-					your_ip = choice(list(network.hosts()))
-				lease = Lease(client_id, server, your_ip, network.netmask, network.broadcast_address)
-				self.db[client_id] = lease
-				self.ips[lease.your_ip] = lease
-			return self.db[client_id]
+		def __del__(self):
+			if self.dhcp_server:
+				self.dhcp_server.stop_server()
 
-	class FakeDhcp(DhcpServer):
-		def create_lease_db(self):
-			self.leases = LeaseDB(IPv4Address('172.16.66.1'), IPv4Network('172.16.66.0/24'))
+		def get_ip_for_mac(self, mac):
+			return '172.16.66.22'
 
-	if not OFFSET:
-		if call('ip l set dev eth0 up', shell=True):
-			raise Exception()
-		if call('ip a add dev eth0 {}'.format(IPv4Address('172.16.66.1')), shell=True):
-			raise Exception()
-	d = FakeDhcp(ip=IPv4Address('172.16.66.1').exploded, interface=b'eth0', port=OFFSET+67, subnet=IPv4Network('172.16.66.0/24'), start=100, end=200)
-	d.start_server()
-	if not OFFSET:
-		if call('ip a del dev eth0 {}'.format(IPv4Address('172.16.66.1')), shell=True):
-			raise Exception()
-		if call('ip l set dev eth0 down', shell=True):
-			raise Exception()
+
+try:
+	interface = 'eth0'
+	net_bits = 24
+	network = IPv4Network('172.16.66.0/{}'.format(net_bits)) # define the network we are in
+	server_ip = next(network.hosts()) # take the first one
+	if call('ip l set dev {} up'.format(interface), shell=True):
+		raise Exception()
+	if call('ip a add dev {} {}/{}'.format(interface, server_ip, net_bits), shell=True):
+		raise Exception()
+	fake_dhcp = FakeServer(server_ip, interface)
+	fake_dhcp.server_thread.join()
+finally:
+	if call('ip a del dev {} {}/{}'.format(interface, server_ip, net_bits), shell=True):
+		raise Exception()
+#	if call('ip l set dev {} down'.format(interface), shell=True):
+#		raise Exception()
 
