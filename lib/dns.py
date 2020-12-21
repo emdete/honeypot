@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# from https://github.com/Crypt0s/FakeDns, Main portions Copyright (c) 2020 Bryan "Crypt0s" Halfpap
+# from https://github.com/Crypt0s/FakeDns, MIT, main portions copyright (c) 2020 Bryan "Crypt0s" Halfpap
 from socket import getaddrinfo, AF_INET6, AF_INET
 from socketserver import ThreadingUDPServer, BaseRequestHandler
 from struct import pack
@@ -292,21 +292,24 @@ class NONEFOUND(DNSResponse):
 class Handler(BaseRequestHandler):
 	def handle(self):
 		log.debug('handle %s', self.request)
-		(data, s) = self.request
-		response = self.get_response(DNSQuery(data), self.client_address[0])
-		if response:
-			s.sendto(response, self.client_address)
+		data, s, = self.request
+		query = DNSQuery(data)
+		method = getattr(self, 'get_{}_for_name'.format(TYPE[query.type]), None)
+		if method:
+			response = method(query, self.client_address[0])
+			if response:
+				s.sendto(response, self.client_address)
 
-	def get_response(self, query, client):
-		return self.server.get_response(query, client)
+	def get_A_for_name(self, query, client):
+		return self.server.get_response_for_name(query, client)
 
 
-class DNS(ThreadingUDPServer):
+class Dns(ThreadingUDPServer):
 	def __init__(self, server_address):
 		self.address_family = AF_INET
-		super(DNS, self).__init__((server_address, 53), Handler)
+		super(Dns, self).__init__((server_address, 53), Handler)
 
-	def get_response(self, query, client):
+	def get_response_for_name(self, query, client):
 		return CASE[query.type](query, record='127.0.0.1').make_packet()
 
 

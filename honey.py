@@ -6,8 +6,9 @@ from signal import signal, SIGINT
 from subprocess import call
 from sys import stdout
 from threading import Thread
-from l3 import LevelThree
-from dns import DNS, CASE, TYPE
+from dhcp import LevelThree as Dhcp
+from dns import Dns, CASE, TYPE
+from ntp import Ntp
 import logging as log
 
 log.basicConfig(stream=stdout, level=log.INFO, format='%(asctime)s %(levelname)s: %(message)s')
@@ -22,27 +23,37 @@ def signal_handler(sig, frame):
 	exit(0)
 signal(SIGINT, signal_handler)
 
-class FakeDns(DNS):
-	def get_response(self, query, client):
+class FakeDhcp(Dhcp):
+	def get_ip_for_mac(self, message_type, client_hardware_address, package):
+		your_ip_address = IPv4Address('172.16.66.111')
+		log.info('get_ip_for_mac %s %s %s -> %s', message_type, client_hardware_address, package, your_ip_address)
+		return your_ip_address
+
+class FakeDns(Dns):
+	def get_A_for_name(self, query, client):
 		try:
 			response = CASE[query.type](query, record=server_ip_address.exploded)
-			log.info('get_response %s %s %s %s', str(query.domain, 'ascii'), TYPE[query.type], client, response)
+			log.info('get_A_for_name %s %s %s %s', str(query.domain, 'ascii'), TYPE[query.type], client, response)
 			return response.make_packet()
 		except:
 			pass
 
-class FakeDhcp(LevelThree):
-	def get_ip_for_mac(self, message_type, client_hardware_address, package):
-		log.info('get_ip_for_mac %s %s %s', message_type, client_hardware_address, package)
-		return IPv4Address('172.16.66.111')
+class FakeNtp(Ntp):
+	def get_time(self, package, client_address):
+		response = super(FakeNtp, self).get_time(package, client_address)
+		log.info('get_time %s %s %s', package, client_address, response)
+		return response
 
+#class FakeHttp(Http):
+#	pass
+#
 try:
 	if call('ip l set dev {} up'.format(interface), shell=True):
 		raise Exception()
 	if call('ip a add dev {} {}/{}'.format(interface, server_ip_address, net_bits), shell=True):
 		raise Exception()
-	fake_dns = FakeDns(server_ip_address.exploded)
-	Thread(target=fake_dns.serve_forever, daemon=True).start()
+	Thread(target=FakeDns(server_ip_address.exploded).serve_forever, daemon=True).start()
+	Thread(target=FakeNtp(server_ip_address.exploded).serve_forever, daemon=True).start()
 	FakeDhcp(
 		interface=interface,
 		server_ip_address=server_ip_address,

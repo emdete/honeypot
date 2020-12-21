@@ -1,7 +1,7 @@
 all:
 
 run:
-	python3 -u l3.py
+	python3 -u ntp.py
 
 dbg:
 

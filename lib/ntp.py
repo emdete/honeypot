@@ -1,17 +1,14 @@
 #!/usr/bin/env python3
-# from https://github.com/limifly/ntpserver, MIT, Main portions Copyright limifly@gmail.com.
-import datetime
-import socket
+# from https://github.com/limifly/ntpserver, MIT, main portions copyright limifly@gmail.com.
+# based on https://pypi.org/project/ntplib/, MIT
+from socketserver import ThreadingUDPServer, BaseRequestHandler
+from socket import AF_INET
+from datetime import date
 import struct
 import time
-import Queue
-import mutex
 import threading
 import select
 import logging as log
-
-taskQueue = Queue.Queue()
-stopFlag = False
 
 def system_to_ntp_time(timestamp):
 	'''Convert a system time to a NTP time.
@@ -60,9 +57,9 @@ class NTPException(Exception):
 
 class NTP:
 	'Helper class defining constants.'
-	_SYSTEM_EPOCH = datetime.date(*time.gmtime(0)[0:3])
+	_SYSTEM_EPOCH = date(*time.gmtime(0)[0:3])
 	'system epoch'
-	_NTP_EPOCH = datetime.date(1900, 1, 1)
+	_NTP_EPOCH = date(1900, 1, 1)
 	'NTP epoch'
 	NTP_DELTA = (_SYSTEM_EPOCH - _NTP_EPOCH).days * 24 * 3600
 	'delta between system and NTP time'
@@ -222,79 +219,36 @@ class NTPPacket:
 		self.orig_timestamp_low = low
 
 
-class RecvThread(threading.Thread):
-	def __init__(self,socket):
-		threading.Thread.__init__(self)
-		self.socket = socket
-	def run(self):
-		global taskQueue,stopFlag
-		while True:
-			if stopFlag == True:
-				log.info('RecvThread Ended')
-				break
-			rlist,wlist,elist = select.select([self.socket],[],[],1);
-			if len(rlist) != 0:
-				log.info('Received %d packets' % len(rlist))
-				for tempSocket in rlist:
-					try:
-						data,addr = tempSocket.recvfrom(1024)
-						recvTimestamp = recvTimestamp = system_to_ntp_time(time.time())
-						taskQueue.put((data,addr,recvTimestamp))
-					except socket.error,msg:
-						log.info(msg;)
+class Handler(BaseRequestHandler):
+	def handle(self):
+		log.debug('handle %s', self.request)
+		data, s, = self.request
+		recvPacket = NTPPacket()
+		recvPacket.from_data(data)
+		recvTimestamp = system_to_ntp_time(self.get_time(recvPacket, s))
+		timeStamp_high, timeStamp_low = recvPacket.GetTxTimeStamp()
+		sendPacket = NTPPacket(version=3,mode=4)
+		sendPacket.stratum = 2
+		sendPacket.poll = 10
+		#sendPacket.precision = 0xfa
+		#sendPacket.root_delay = 0x0bfa
+		#sendPacket.root_dispersion = 0x0aa7
+		#sendPacket.ref_id = 0x808a8c2c
+		sendPacket.ref_timestamp = recvTimestamp-5
+		sendPacket.SetOriginTimeStamp(timeStamp_high, timeStamp_low)
+		sendPacket.recv_timestamp = recvTimestamp
+		sendPacket.tx_timestamp = recvTimestamp
+		s.sendto(sendPacket.to_data(), self.client_address)
 
+	def get_time(self, package, client_address):
+		return time.time()
 
-class WorkThread(threading.Thread):
-	def __init__(self,socket):
-		threading.Thread.__init__(self)
-		self.socket = socket
-	def run(self):
-		global taskQueue,stopFlag
-		while True:
-			if stopFlag == True:
-				log.info('WorkThread Ended')
-				break
-			try:
-				data,addr,recvTimestamp = taskQueue.get(timeout=1)
-				recvPacket = NTPPacket()
-				recvPacket.from_data(data)
-				timeStamp_high,timeStamp_low = recvPacket.GetTxTimeStamp()
-				sendPacket = NTPPacket(version=3,mode=4)
-				sendPacket.stratum = 2
-				sendPacket.poll = 10
-				#sendPacket.precision = 0xfa
-				#sendPacket.root_delay = 0x0bfa
-				#sendPacket.root_dispersion = 0x0aa7
-				#sendPacket.ref_id = 0x808a8c2c
-				sendPacket.ref_timestamp = recvTimestamp-5
-				sendPacket.SetOriginTimeStamp(timeStamp_high,timeStamp_low)
-				sendPacket.recv_timestamp = recvTimestamp
-				sendPacket.tx_timestamp = system_to_ntp_time(time.time())
-				socket.sendto(sendPacket.to_data(),addr)
-				log.info('Sended to %s:%d' % (addr[0],addr[1]))
-			except Queue.Empty:
-				continue
-
+class Ntp(ThreadingUDPServer):
+	def __init__(self, server_address):
+		self.address_family = AF_INET
+		super(Ntp, self).__init__((server_address, 123), Handler)
 
 if __name__ == '__main__':
-	listenIp = '0.0.0.0'
-	listenPort = 123
-	socket = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-	socket.bind((listenIp,listenPort))
-	log.info('local socket: ', socket.getsockname();)
-	recvThread = RecvThread(socket)
-	recvThread.start()
-	workThread = WorkThread(socket)
-	workThread.start()
-	while True:
-		try:
-			time.sleep(0.5)
-		except KeyboardInterrupt:
-			log.info('Exiting...')
-			stopFlag = True
-			recvThread.join()
-			workThread.join()
-			#socket.close()
-			log.info('Exited')
-			break
-
+	from sys import stdout
+	log.basicConfig(stream=stdout, level=log.DEBUG, format='%(asctime)s %(levelname)s: %(message)s')
+	Ntp('172.16.66.1').serve_forever()
