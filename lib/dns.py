@@ -292,13 +292,15 @@ class NONEFOUND(DNSResponse):
 class Handler(BaseRequestHandler):
 	def handle(self):
 		log.debug('handle %s', self.request)
-		data, s, = self.request
+		data, socket, = self.request
 		query = DNSQuery(data)
 		method = getattr(self, 'get_{}_for_name'.format(TYPE[query.type]), None)
 		if method:
 			response = method(query, self.client_address[0])
 			if response:
-				s.sendto(response, self.client_address)
+				socket.sendto(response, self.client_address)
+				return
+		socket.sendto(NONEFOUND(query), self.client_address)
 
 	def get_A_for_name(self, query, client):
 		return self.server.get_response_for_name(query, client)
