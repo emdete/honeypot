@@ -7,7 +7,7 @@ from subprocess import call
 from sys import stdout
 from threading import Thread
 from l3 import LevelThree
-from fakedns import DNS, CASE, TYPE
+from dns import DNS, CASE, TYPE
 import logging as log
 
 log.basicConfig(stream=stdout, level=log.INFO, format='%(asctime)s %(levelname)s: %(message)s')

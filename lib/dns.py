@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Portions Copyright (c) 2020 Bryan "Crypt0s" Halfpap
+# from https://github.com/Crypt0s/FakeDns, Main portions Copyright (c) 2020 Bryan "Crypt0s" Halfpap
 from socket import getaddrinfo, AF_INET6, AF_INET
 from socketserver import ThreadingUDPServer, BaseRequestHandler
 from struct import pack
