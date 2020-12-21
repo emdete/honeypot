@@ -3,7 +3,7 @@
 all:
 
 run:
-	PYTHONPATH=../../../oss/python/FakeDns:lib \
+	PYTHONPATH=lib \
 	python3 -u ./honey.py
 
 dbg:
