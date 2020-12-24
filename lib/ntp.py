@@ -212,9 +212,9 @@ class NTPPacket:
 		self.tx_timestamp_low = unpacked[14]
 
 	def GetTxTimeStamp(self):
-		return (self.tx_timestamp_high,self.tx_timestamp_low)
+		return (self.tx_timestamp_high, self.tx_timestamp_low)
 
-	def SetOriginTimeStamp(self,high,low):
+	def SetOriginTimeStamp(self, high, low):
 		self.orig_timestamp_high = high
 		self.orig_timestamp_low = low
 
@@ -225,9 +225,9 @@ class Handler(BaseRequestHandler):
 		data, s, = self.request
 		recvPacket = NTPPacket()
 		recvPacket.from_data(data)
-		recvTimestamp = system_to_ntp_time(self.get_time(recvPacket, s))
+		recvTimestamp = system_to_ntp_time(self.get_time(recvPacket, self.client_address))
 		timeStamp_high, timeStamp_low = recvPacket.GetTxTimeStamp()
-		sendPacket = NTPPacket(version=3,mode=4)
+		sendPacket = NTPPacket(version=3, mode=4)
 		sendPacket.stratum = 2
 		sendPacket.poll = 10
 		#sendPacket.precision = 0xfa
@@ -240,15 +240,20 @@ class Handler(BaseRequestHandler):
 		sendPacket.tx_timestamp = recvTimestamp
 		s.sendto(sendPacket.to_data(), self.client_address)
 
-	def get_time(self, package, client_address):
-		return time.time()
+	def get_time(self, packet, client_address):
+		return self.server.get_time(packet, client_address)
 
 class Ntp(ThreadingUDPServer):
 	def __init__(self, server_address):
 		self.address_family = AF_INET
 		super(Ntp, self).__init__((server_address, 123), Handler)
 
+	def get_time(self, packet, client_address):
+		return time.time()
+
+
 if __name__ == '__main__':
-	from sys import stdout
-	log.basicConfig(stream=stdout, level=log.DEBUG, format='%(asctime)s %(levelname)s: %(message)s')
-	Ntp('172.16.66.1').serve_forever()
+	from sys import stderr
+	log.basicConfig(stream=stderr, level=log.DEBUG, format='%(asctime)s %(levelname)s: %(message)s')
+	Ntp('0.0.0.0').serve_forever()
+

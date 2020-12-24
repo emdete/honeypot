@@ -31,8 +31,10 @@ class Option(IntEnum):
 	HOSTNAME = 12
 	DOMAIN_NAME = 15
 	SRCRTE = 20
+	MTU_INTERFACE = 26
 	BROADCAST_ADDRESS = 28
 	NTP_SERVERS = 42
+	VENDOR_SPECIFIC = 43
 	REQUESTED_IP = 50
 	LEASE_TIME = 51
 	MESSAGE_TYPE = 53
@@ -47,7 +49,9 @@ class Option(IntEnum):
 	CLASSLESS_STATIC_ROUTE = 121
 	V_I_VENDOR_CLASS = 124
 	END = 255
+	UNKNOWN = 256
 
+# decoders
 def decode_int(value: bytes) -> int:
 	return int.from_bytes(value, byteorder='big', signed=False)
 
@@ -80,12 +84,13 @@ def decode_Option(value: bytes) -> Option:
 	try:
 		return Option(int(value[0]))
 	except:
-		pass
+		log.warning('Unknown option %d', value[0])
+		return Option.UNKNOWN
 
 def decode_request_list(value: bytes) -> list:
-	return [Option(int(n)) for n in value]
+	return [decode_Option((n, )) for n in value]
 
-
+# encoders
 def encode_int(value: int, length: int = 1) -> bytes:
 	return value.to_bytes(length, 'big')
 
@@ -115,17 +120,17 @@ def encode_request_list(value: list, length: int = 0) -> bytes:
 class LevelTwo(LevelOne):
 	def request(self, data, address, ):
 		#log.debug('request: %s', data)
-		package = self.decode(data)
-		#log.debug('request: %s %s', package, address)
-		if package.pop('opcode') == Opcode.REQUEST:
-			method = getattr(self, 'do_' + package['options'].pop('message_type').name.lower(), None)
+		packet = self.decode(data)
+		#log.debug('request: %s %s', packet, address)
+		if packet.pop('opcode') == Opcode.REQUEST:
+			method = getattr(self, 'do_' + packet['options'].pop('message_type').name.lower(), None)
 			if method:
-				return method(**package)
-		log.warn('unhandled request: %s', package)
+				return method(**packet)
+		log.warn('unhandled request: %s', packet)
 
-	def respond(self, package):
-		#log.debug('respond: %s', package)
-		data = self.encode(package)
+	def respond(self, packet):
+		#log.debug('respond: %s', packet)
+		data = self.encode(packet)
 		#log.debug('respond: %s', data)
 		super(LevelTwo, self).respond(data)
 
@@ -174,17 +179,17 @@ class LevelTwo(LevelOne):
 		)
 
 	@staticmethod
-	def encode(package):
+	def encode(packet):
 		data = b''
 		for name in ('opcode', 'hardware_type', 'hardware_address_length', 'hops', 'transaction_id', 'seconds_elapsed', 'boot_flags',
 				'client_ip_address', 'your_ip_address', 'server_ip_address',
 				'gateway_ip_address', 'client_hardware_address', 'server_name',
 				'boot_filename', 'magic_cookie', ):
 			eop = LevelTwo._name_coders[name]
-			data += eop['encoder'](package.pop(name), eop['length'])
-		data += LevelTwo.encoder_options(package.pop('options'))
-		if package:
-			log.warn('residual values %s', package)
+			data += eop['encoder'](packet.pop(name), eop['length'])
+		data += LevelTwo.encoder_options(packet.pop('options'))
+		if packet:
+			log.warn('residual values %s', packet)
 		return data
 
 	@staticmethod
@@ -253,9 +258,9 @@ if __name__ == '__main__':
 	#print([int(b) for b in sample])
 	#print(LevelTwo.decode(sample))
 	#exit(0)
-	from sys import stdout
+	from sys import stderr
 	from signal import signal, SIGINT
-	log.basicConfig(stream=stdout, level=log.DEBUG, format='%(asctime)s %(levelname)s: %(message)s')
+	log.basicConfig(stream=stderr, level=log.DEBUG, format='%(asctime)s %(levelname)s: %(message)s')
 	def signal_handler(sig, frame):
 		log.debug('Exiting...')
 		exit(0)

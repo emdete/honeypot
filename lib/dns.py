@@ -294,16 +294,7 @@ class Handler(BaseRequestHandler):
 		log.debug('handle %s', self.request)
 		data, socket, = self.request
 		query = DNSQuery(data)
-		method = getattr(self, 'get_{}_for_name'.format(TYPE[query.type]), None)
-		if method:
-			response = method(query, self.client_address[0])
-			if response:
-				socket.sendto(response, self.client_address)
-				return
-		socket.sendto(NONEFOUND(query), self.client_address)
-
-	def get_A_for_name(self, query, client):
-		return self.server.get_response_for_name(query, client)
+		self.server.handle(query, self.client_address, socket)
 
 
 class Dns(ThreadingUDPServer):
@@ -311,7 +302,17 @@ class Dns(ThreadingUDPServer):
 		self.address_family = AF_INET
 		super(Dns, self).__init__((server_address, 53), Handler)
 
-	def get_response_for_name(self, query, client):
+	def handle(self, query, client_address, socket):
+		method = getattr(self, 'get_{}_for_name'.format(TYPE[query.type]), None)
+		if method:
+			response = method(query, client_address)
+			if response:
+				socket.sendto(response, client_address)
+				return
+		log.info('handle %s %s NONEFOUND', str(query.domain, 'ascii'), TYPE[query.type])
+		socket.sendto(NONEFOUND(query).make_packet(), client_address)
+
+	def get_A_for_name(self, query, client):
 		return CASE[query.type](query, record='127.0.0.1').make_packet()
 
 

@@ -15,13 +15,13 @@ class LevelThree(LevelTwo):
 		self.broadcast_address = broadcast_address
 		self.lease_time = lease_time
 
-	def do_discover(self, client_hardware_address, **package):
-		transaction_id = package.get('transaction_id')
-		options = package.get('options')
+	def do_discover(self, client_hardware_address, **packet):
+		transaction_id = packet.get('transaction_id')
+		options = packet.get('options')
 		request_list = options.get('request_list', None)
-		your_ip_address = self.get_ip_for_mac('discover', client_hardware_address, package)
+		your_ip_address = self.get_ip_for_mac('discover', client_hardware_address, packet)
 		log.debug('do_discover %s %s %s %s', client_hardware_address, transaction_id, request_list, your_ip_address)
-		package = dict(
+		packet = dict(
 			opcode=Opcode.REPLY,
 			hardware_type=1,
 			hardware_address_length=6,
@@ -49,16 +49,16 @@ class LevelThree(LevelTwo):
 				broadcast_address=self.broadcast_address,
 				),
 			)
-		self.respond(package)
+		self.respond(packet)
 
-	def do_request(self, client_hardware_address, **package):
-		transaction_id = package.get('transaction_id')
-		options = package.get('options')
+	def do_request(self, client_hardware_address, **packet):
+		transaction_id = packet.get('transaction_id')
+		options = packet.get('options')
 		requested_ip = options.get('requested_ip', None)
 		log.debug('do_request %s %s', client_hardware_address, requested_ip)
-		your_ip_address = self.get_ip_for_mac('request', client_hardware_address, package)
+		your_ip_address = self.get_ip_for_mac('request', client_hardware_address, packet)
 		if your_ip_address:
-			package = dict(
+			packet = dict(
 				opcode=Opcode.REPLY,
 				hardware_type=1,
 				hardware_address_length=6,
@@ -86,16 +86,16 @@ class LevelThree(LevelTwo):
 					broadcast_address=self.broadcast_address,
 					),
 				)
-			self.respond(package)
+			self.respond(packet)
 
-	def get_ip_for_mac(self, message_type, client_hardware_address, package):
+	def get_ip_for_mac(self, message_type, client_hardware_address, packet):
 		' dummy single address for testing '
 		return IPv4Address('172.16.66.2')
 
 if __name__ == '__main__':
-	from sys import stdout
+	from sys import stderr
 	from signal import signal, SIGINT
-	log.basicConfig(stream=stdout, level=log.DEBUG, format='%(asctime)s %(levelname)s: %(message)s')
+	log.basicConfig(stream=stderr, level=log.DEBUG, format='%(asctime)s %(levelname)s: %(message)s')
 	def signal_handler(sig, frame):
 		log.debug('Exiting...')
 		exit(0)

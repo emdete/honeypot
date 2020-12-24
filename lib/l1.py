@@ -4,7 +4,7 @@ from select import select
 from socket import inet_aton, socket, AF_INET, SOCK_DGRAM, SO_BROADCAST, SO_REUSEADDR, SOL_SOCKET
 
 class LevelOne(object):
-	' Level to receive and send UDP packages for DHCP '
+	' Level to receive and send UDP packets for DHCP '
 	source = '0.0.0.0', 67,
 	destination = '255.255.255.255', 68,
 	max_bytes = 1024
@@ -27,14 +27,14 @@ class LevelOne(object):
 		log.debug('%s %s', address, len(data))
 		self.respond(data)
 
-	def respond(self, package):
-		self.server_socket.sendto(package, self.destination)
+	def respond(self, packet):
+		self.server_socket.sendto(packet, self.destination)
 
 
 if __name__ == '__main__':
-	from sys import stdout
+	from sys import stderr
 	from signal import signal, SIGINT
-	log.basicConfig(stream=stdout, level=log.DEBUG, format='%(asctime)s %(levelname)s: %(message)s')
+	log.basicConfig(stream=stderr, level=log.DEBUG, format='%(asctime)s %(levelname)s: %(message)s')
 	def signal_handler(sig, frame):
 		log.debug('Exiting...')
 		exit(0)
