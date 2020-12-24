@@ -6,13 +6,16 @@ from signal import signal, SIGINT
 from time import ctime
 from subprocess import call
 from sys import stderr
-from ssl import SSLContext, AlertDescription, HAS_SNI, PROTOCOL_TLS_SERVER
+from ssl import SSLContext, AlertDescription, HAS_SNI, PROTOCOL_TLS_SERVER, create_default_context
+from OpenSSL.crypto import dump_privatekey, FILETYPE_PEM
 from threading import Thread
 from dhcp import LevelThree as Dhcp
 from dns import Dns, CASE, TYPE
+from os.path import exists
 from ntp import Ntp
-import logging as log
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
+from mitmproxy.certs import CertStore
+import logging as log
 
 log.basicConfig(stream=stderr, level=log.INFO, format='%(asctime)s %(levelname)s: %(message)s')
 interface = 'eth0'
@@ -59,7 +62,7 @@ class FakeNtp(Ntp):
 	def get_time(self, packet, client_address):
 		log.debug('get_time %s %s', packet, client_address)
 		response = super(FakeNtp, self).get_time(packet, client_address)
-		log.info('get_time %s %s', client_address[0], ctime(response))
+		log.info('get_time %s -> %s', client_address[0], ctime(response))
 		return response
 
 class FakeHttpHandler(BaseHTTPRequestHandler):
@@ -97,10 +100,12 @@ class FakeHttp(ThreadingHTTPServer):
 class FakeHttps(ThreadingHTTPServer):
 	def __init__(self, server_address):
 		super(FakeHttps, self).__init__((server_address, 443), FakeHttpHandler)
-		self.context = SSLContext(PROTOCOL_TLS_SERVER)
-		self.context.load_cert_chain('open.net.selfsigned', 'open.net.key')
 		if not HAS_SNI:
 			raise Exception('sni missing')
+		self.certstore = CertStore.from_store('pemdb', 'open.net', 2048, None)
+		self.context = SSLContext(PROTOCOL_TLS_SERVER)
+		self.context.load_cert_chain('pemdb/open.net-ca-cert.pem', 'pemdb/open.net-ca.pem')
+		self.context.load_dh_params('pemdb/open.net-dhparam.pem')
 		if self.context.sni_callback:
 			self.context.sni_callback(self.sni)
 		else:
@@ -108,8 +113,20 @@ class FakeHttps(ThreadingHTTPServer):
 		self.socket = self.context.wrap_socket(self.socket, server_side=True)
 
 	def sni(self, sock, name, context):
-		log.info('sni %s %s', sock, name)
-		return AlertDescription.ALERT_DESCRIPTION_INTERNAL_ERROR
+		log.info('sni %s %s %s', name, sock, sock.context)
+		if name:
+			chain_filename, cert_filename, privkey_filename = f'pemdb/{name}-ca-chain.pem', f'pemdb/{name}-ca-cert.pem', f'pemdb/{name}-ca.pem'
+			if not exists(chain_filename) or not exists(cert_filename) or not exists(privkey_filename):
+				cert, privkey, cert_chain = self.certstore.get_cert(name.encode(), list())
+				with open(chain_filename, 'wb') as f:
+					f.write(cert.to_pem())
+				with open(cert_filename, 'wb') as f:
+					f.write(cert.to_pem())
+				with open(privkey_filename, 'wb') as f:
+					f.write(dump_privatekey(FILETYPE_PEM, privkey))
+			sock.context = SSLContext(PROTOCOL_TLS_SERVER)
+			sock.context.load_cert_chain(cert_filename, privkey_filename)
+			sock.context.load_dh_params('pemdb/open.net-dhparam.pem')
 
 try:
 	if call('ip l set dev {} up'.format(interface), shell=True):

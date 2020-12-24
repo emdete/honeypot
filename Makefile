@@ -9,4 +9,5 @@ run:
 	python3 -u ./honey.py
 
 dbg:
+	adb push pemdb/open.net-ca-cert.pem /sdcard/Downloads/.
 
