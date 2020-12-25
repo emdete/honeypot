@@ -18,8 +18,8 @@ class LevelOne(object):
 		self.server_socket.setsockopt(SOL_SOCKET, 25, self.interface.encode('ascii') + b'\0')
 		self.server_socket.bind(self.source)
 
-	def run(self):
-		while self.run:
+	def serve_forever(self):
+		while self.serve_forever:
 			if select([self.server_socket], [], [], self.recv_timeout)[0]:
 				self.request(*self.server_socket.recvfrom(self.max_bytes))
 
@@ -39,5 +39,5 @@ if __name__ == '__main__':
 		log.debug('Exiting...')
 		exit(0)
 	signal(SIGINT, signal_handler)
-	ds = LevelOne('eth0').run()
+	ds = LevelOne('eth0').serve_forever()
 

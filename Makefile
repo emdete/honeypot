@@ -1,4 +1,3 @@
-# see https://openwrt.org/docs/guide-user/network/wifi/dumbap
 # see https://mitmproxy.org/
 
 all:

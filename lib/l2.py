@@ -265,6 +265,6 @@ if __name__ == '__main__':
 		log.debug('Exiting...')
 		exit(0)
 	signal(SIGINT, signal_handler)
-	ds = LevelTwo('eth0').run()
+	ds = LevelTwo('eth0').serve_forever()
 
 

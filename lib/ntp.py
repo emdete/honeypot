@@ -244,9 +244,9 @@ class Handler(BaseRequestHandler):
 		return self.server.get_time(packet, client_address)
 
 class Ntp(ThreadingUDPServer):
-	def __init__(self, server_address):
+	def __init__(self, server_ip_address):
 		self.address_family = AF_INET
-		super(Ntp, self).__init__((server_address, 123), Handler)
+		super(Ntp, self).__init__((server_ip_address.exploded, 123), Handler)
 
 	def get_time(self, packet, client_address):
 		return time.time()

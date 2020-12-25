@@ -294,25 +294,26 @@ class Handler(BaseRequestHandler):
 		log.debug('handle %s', self.request)
 		data, socket, = self.request
 		query = DNSQuery(data)
-		self.server.handle(query, self.client_address, socket)
+		self.server.handle(self.client_address, query, socket)
 
 
 class Dns(ThreadingUDPServer):
-	def __init__(self, server_address):
+	def __init__(self, server_ip_address):
+		self.server_ip_address = server_ip_address
 		self.address_family = AF_INET
-		super(Dns, self).__init__((server_address, 53), Handler)
+		super(Dns, self).__init__((server_ip_address.exploded, 53), Handler)
 
-	def handle(self, query, client_address, socket):
+	def handle(self, client_address, query, socket):
 		method = getattr(self, 'get_{}_for_name'.format(TYPE[query.type]), None)
 		if method:
-			response = method(query, client_address)
+			response = method(client_address, query, )
 			if response:
 				socket.sendto(response, client_address)
 				return
 		log.info('handle %s %s NONEFOUND', str(query.domain, 'ascii'), TYPE[query.type])
 		socket.sendto(NONEFOUND(query).make_packet(), client_address)
 
-	def get_A_for_name(self, query, client):
+	def get_A_for_name(self, client_address, query, ):
 		return CASE[query.type](query, record='127.0.0.1').make_packet()
 
 

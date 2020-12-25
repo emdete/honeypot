@@ -4,15 +4,10 @@ from ipaddress import IPv4Address, IPv4Network
 from l2 import LevelTwo, Opcode, MessageType
 
 class LevelThree(LevelTwo):
-	def __init__(self, interface,
-			server_ip_address=IPv4Address('172.16.66.1'),
-			subnet_mask=IPv4Address('172.16.66.0'),
-			broadcast_address=IPv4Address('172.16.66.255'),
-			lease_time=60*30):
+	def __init__(self, interface, server_ip_address, network, lease_time=60*30):
 		super(LevelThree, self).__init__(interface)
 		self.server_ip_address = server_ip_address
-		self.subnet_mask = subnet_mask
-		self.broadcast_address = broadcast_address
+		self.network = network
 		self.lease_time = lease_time
 
 	def do_discover(self, client_hardware_address, **packet):
@@ -45,8 +40,8 @@ class LevelThree(LevelTwo):
 				router=self.server_ip_address,
 				dns=self.server_ip_address,
 				ntp_servers=self.server_ip_address,
-				subnet_mask=self.subnet_mask,
-				broadcast_address=self.broadcast_address,
+				subnet_mask=self.network.netmask,
+				broadcast_address=self.network.broadcast_address,
 				),
 			)
 		self.respond(packet)
@@ -82,8 +77,8 @@ class LevelThree(LevelTwo):
 					router=self.server_ip_address,
 					dns=self.server_ip_address,
 					ntp_servers=self.server_ip_address,
-					subnet_mask=self.subnet_mask,
-					broadcast_address=self.broadcast_address,
+					subnet_mask=self.network.netmask,
+					broadcast_address=self.network.broadcast_address,
 					),
 				)
 			self.respond(packet)
@@ -100,5 +95,5 @@ if __name__ == '__main__':
 		log.debug('Exiting...')
 		exit(0)
 	signal(SIGINT, signal_handler)
-	ds = LevelThree('eth0').run()
+	ds = LevelThree('eth0').serve_forever()
 
