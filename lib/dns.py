@@ -339,7 +339,9 @@ class Dns_s(object):
 
 	def serve_forever(self):
 		while True:
-			client_socket, address = self.socket.accept()
-			log.info('%s %s', client_socket, address)
-			client_socket.close()
-
+			try:
+				client_socket, address = self.socket.accept()
+				log.info('%s %s', client_socket, address)
+				client_socket.close()
+			except:
+				pass

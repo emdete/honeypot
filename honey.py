@@ -2,18 +2,19 @@
 import logging as log
 from sys import stderr
 log.basicConfig(stream=stderr, level=log.INFO, format='%(asctime)s %(levelname)s: %(message)s')
-#from datetime import datetime
+from datetime import datetime
 from ipaddress import IPv4Address, IPv4Network
 from signal import signal, SIGINT
 #from random import choice
 from subprocess import call
 from threading import Thread
 from time import ctime
+from http import HTTPStatus
 # fake bases:
 from dhcp import LevelThree as Dhcp
 from ntp import Ntp
 from dns import Dns, Dns_s, CASE, TYPE
-from http_ import FakeHttp, FakeHttps #TODO move functionality here
+from http_ import Http, Https #TODO move functionality here
 
 #!udp.port == 53 && !(ip.addr == 13.248.212.111) && !(ip.addr == 76.223.92.165) && !arp && !dhcp
 
@@ -49,6 +50,7 @@ class FakeDhcp(Dhcp):
 				client_id= client_id,
 				client_hardware_address= client_hardware_address,
 				your_ip_address = self.get_free_ip(),
+				timestamp=datetime.now(),
 				)
 			self.client_macs[client_hardware_address] = config
 		log.info('get_ip_for_mac %s -> %s', client_hardware_address, config, )
@@ -77,6 +79,26 @@ class FakeNtp(Ntp):
 		log.info('get_time %s -> %s', client_address[0], ctime(response))
 		return response
 
+class FakeHttp(Http):
+	def get_response(self, host, headers, path, ):
+		# captive portal checks
+		if (host, path, ) in (
+			('connectivitycheck.gstatic.com', '/generate_204', ),
+			('www.google.com', '/gen_204', ),
+			('play.googleapis.com', '/generate_204', ),
+		):
+			log.info('do_GET %s %s:%s -> %s', self.client_address[0], host, path, 204)
+			return HTTPStatus.NO_CONTENT, {'Content-Length': '0'}, ''
+		elif (host, path, ) in (
+			('detectportal.firefox.com', '/success.txt?ipv4', ),
+		):
+			log.info('do_GET %s %s%s -> %s %s', self.client_address[0], host, path, HTTPStatus.OK, 'success')
+			return HTTPStatus.OK, {"Content-type": "text/plain"}, 'success\n\r'
+		return 404, None, ''
+
+class FakeHttps(Https):
+	def get_response(self, host, headers, path, ):
+		return 404, None, ''
 
 def main(interface='eth0', network='172.16.66.0', net_bits=24, ):
 	network = IPv4Network('{}/{}'.format(network, net_bits)) # define the network we are in

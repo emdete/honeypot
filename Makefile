@@ -1,12 +1,17 @@
 # see https://mitmproxy.org/
 
 all:
-	python3 -u ./s.py
+	adb push pemdb/open.net-ca-cert.pem /sdcard/Downloads/.
 
 run:
 	PYTHONPATH=lib \
 	python3 -u ./honey.py
 
 dbg:
-	adb push pemdb/open.net-ca-cert.pem /sdcard/Downloads/.
+	chgrp -R www-data . | true
+	rsync \
+		--archive \
+		--verbose \
+		--delete \
+		. littlun.emdete.de:/var/www/belphegor.emdete.de/honeypot/.
 
