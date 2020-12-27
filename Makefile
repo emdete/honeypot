@@ -1,7 +1,7 @@
 # see https://mitmproxy.org/
 
 all:
-	./s.py
+	python3 -u ./s.py
 
 run:
 	PYTHONPATH=lib \

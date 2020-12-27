@@ -9,17 +9,21 @@ gebridged sind. Eine Beschreibung für die Konfiguration ist hier:
 
 	[dumbap](https://openwrt.org/docs/guide-user/network/wifi/dumbap)
 
+An diesen Router verbindet man einen Rechner per Kabel und kann nun schauen,
+was die Geräte so treiben.
+
 Schritt 2
 --
 
 Als erstes melden sich die Geräte mit einer DHCP Anfrage. Diese muss mit einer
-validen IP beantwortet weden.
+validen IP und einem Standardgateway beantwortet werden.
 
 Ich habe keinen brauchbaren und funktionierenden DHCP Server gefunden, darum
 habe ich (unter Verwendung von Teilen aus anderen Projekten) einen eigenen
 erstellt.
 
-In guter Python-Manier beginnt er zu arbeiten auf `serve_forever()` und ist in drei Schichten umgesetzt:
+In guter Python-Manier beginnt er zu arbeiten auf `serve_forever()` und ist in
+drei Schichten umgesetzt:
 
 - Senden & Empfangen der UDP Pakete
 - Decoden & Encoden der Pakete
@@ -35,6 +39,8 @@ dies. Ein einigermassen brauchbares Modul existierte und findet Verwendung. Auch
 dieses startet mit `serve_forever()` und die wirkliche Zuordnung der IPs findet
 im Hauptmodul statt.
 
+Manche Geräte nutzen tcp domain-s (port 853).
+
 Schritt 4
 --
 
@@ -48,7 +54,7 @@ Schritt 5
 
 Die Welt spricht HTTP und HTTPS. Als erstes Prüfen die Geräte ob das Netz
 wirklich Zugriff auf das Internet erlaubt. Dazu erfragen Android-Telefone
-(http://connectivitycheck.gstatic.com:80/generate_204) oder
+(http://connectivitycheck.gstatic.com/generate_204) oder
 (http://google.com/generate_204) und erwarten einen HTTP-Statuscode von 204.
 
 

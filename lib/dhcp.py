@@ -4,11 +4,12 @@ from ipaddress import IPv4Address, IPv4Network
 from l2 import LevelTwo, Opcode, MessageType
 
 class LevelThree(LevelTwo):
-	def __init__(self, interface, server_ip_address, network, lease_time=60*30):
+	def __init__(self, interface, server_ip_address, network, domain_name, lease_time=60*30):
 		super(LevelThree, self).__init__(interface)
 		self.server_ip_address = server_ip_address
 		self.network = network
 		self.lease_time = lease_time
+		self.domain_name = domain_name
 
 	def do_discover(self, client_hardware_address, **packet):
 		transaction_id = packet.get('transaction_id')
@@ -34,14 +35,16 @@ class LevelThree(LevelTwo):
 			magic_cookie=1669485411,
 			options=dict(
 				message_type=MessageType.OFFER,
+				server_id=self.server_ip_address,
 				lease_time = self.lease_time,
 				renewal_time = self.lease_time // 2,
 				rebinding_time = self.lease_time * 7 // 8,
-				router=self.server_ip_address,
-				dns=self.server_ip_address,
-				ntp_servers=self.server_ip_address,
 				subnet_mask=self.network.netmask,
 				broadcast_address=self.network.broadcast_address,
+				router=self.server_ip_address,
+				dns=self.server_ip_address,
+				domain_name=self.domain_name,
+				#ntp_servers=self.server_ip_address,
 				),
 			)
 		self.respond(packet)
@@ -71,14 +74,16 @@ class LevelThree(LevelTwo):
 				magic_cookie=1669485411,
 				options=dict(
 					message_type=MessageType.ACK,
+					server_id=self.server_ip_address,
 					lease_time = self.lease_time,
 					renewal_time = self.lease_time // 2,
 					rebinding_time = self.lease_time * 7 // 8,
-					router=self.server_ip_address,
-					dns=self.server_ip_address,
-					ntp_servers=self.server_ip_address,
 					subnet_mask=self.network.netmask,
 					broadcast_address=self.network.broadcast_address,
+					router=self.server_ip_address,
+					dns=self.server_ip_address,
+					domain_name=self.domain_name,
+					#ntp_servers=self.server_ip_address,
 					),
 				)
 			self.respond(packet)

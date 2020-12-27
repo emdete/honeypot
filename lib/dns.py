@@ -6,6 +6,8 @@ from struct import pack
 from random import getrandbits
 import configparser as ConfigParser
 import logging as log
+from socket import socket, AF_INET, SOCK_STREAM
+from ssl import HAS_SNI, PROTOCOL_TLS_SERVER, _create_unverified_context, AlertDescription
 
 class DNSQuery:
 	def __init__(self, data):
@@ -316,4 +318,28 @@ class Dns(ThreadingUDPServer):
 	def get_A_for_name(self, client_address, query, ):
 		return CASE[query.type](query, record='127.0.0.1').make_packet()
 
+
+class Dns_s(object):
+	def sni(self,sock, name, context):
+		log.info('sni from %s for domain-s://%s', sock.getpeername()[0], name, )
+		return AlertDescription.ALERT_DESCRIPTION_ACCESS_DENIED
+
+	def __init__(self, server_ip_address):
+		if not HAS_SNI:
+			raise Exception('sni missing here')
+		self.context = _create_unverified_context(PROTOCOL_TLS_SERVER,
+			certfile='pemdb/open.net-ca-cert.pem',
+			keyfile='pemdb/open.net-ca.pem', )
+		self.context.load_dh_params('pemdb/open.net-dhparam.pem')
+		self.context.sni_callback = self.sni
+		self.socket = socket(AF_INET, SOCK_STREAM, 0)
+		self.socket.bind((server_ip_address.exploded, 853))
+		self.socket.listen(5)
+		self.socket = self.context.wrap_socket(self.socket, server_side=True)
+
+	def serve_forever(self):
+		while True:
+			client_socket, address = self.socket.accept()
+			log.info('%s %s', client_socket, address)
+			client_socket.close()
 
