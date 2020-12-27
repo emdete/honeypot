@@ -8,18 +8,19 @@ import logging as log
 
 class HttpHandler(BaseHTTPRequestHandler):
 	def do_POST(self):
-		log.info('do_POST %s %s %s', self.client_address[0], self.headers['Host'], self.path, )
+		log.warn('do_POST %s %s %s', self.client_address[0], self.headers['Host'], self.path, )
 	def do_GET(self):
-		log.debug('%s %s %s %s', self.client_address[0], self.headers['Host'], self.path, self.headers, )
-		code, headers, content = self.server.get_response(self.headers['Host'], self.path, self.headers)
+		log.debug('%s %s %s %s', self.client_address[0], self.headers['Host'], self.headers, self.path, )
+		code, headers, content = self.server.get_response(self.client_address, self.headers['Host'], self.headers, self.path, )
 		self.protocol_version = 'HTTP/1.1'
-		self.close_connection = True
 		self.send_response(code)
+		self.close_connection = True
 		if headers:
 			for n,v in headers.items():
 				self.send_header(n, v)
 			self.end_headers()
-		self.wfile.write(content.encode())
+		if content:
+			self.wfile.write(content.encode())
 
 	def version_string(self): return 'sffe'
 
