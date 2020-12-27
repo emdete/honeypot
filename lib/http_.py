@@ -1,3 +1,4 @@
+# see /usr/lib/python3.9/http/server.py
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from OpenSSL.crypto import dump_privatekey, FILETYPE_PEM
 from mitmproxy.certs import CertStore
@@ -9,26 +10,23 @@ import logging as log
 class HttpHandler(BaseHTTPRequestHandler):
 	def do_POST(self):
 		log.warn('do_POST %s %s %s', self.client_address[0], self.headers['Host'], self.path, )
+
 	def do_GET(self):
 		log.debug('%s %s %s %s', self.client_address[0], self.headers['Host'], self.headers, self.path, )
 		code, headers, content = self.server.get_response(self.client_address, self.headers['Host'], self.headers, self.path, )
 		self.protocol_version = 'HTTP/1.1'
-		self.send_response(code)
-		self.close_connection = True
+		self.send_response_only(code) # dont send default header
+		#self.close_connection = True
 		if headers:
 			for n,v in headers.items():
 				self.send_header(n, v)
-			self.end_headers()
+		self.send_header('Date', self.date_time_string())
+		self.end_headers()
 		if content:
 			self.wfile.write(content.encode())
 
-	def version_string(self): return 'sffe'
-
-	def log_request(self, *a): pass
-
-	def log_error(self, *a): pass
-
-	def log_message(self, *a): pass
+	def log_message(self, fmt, *args):
+		log.info(fmt, *args)
 
 
 class Http(ThreadingHTTPServer):

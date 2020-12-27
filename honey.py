@@ -87,11 +87,11 @@ class FakeHttp(Http):
 			('www.google.com', '/gen_204', ),
 			('play.googleapis.com', '/generate_204', ),
 		):
-			response = HTTPStatus.NO_CONTENT, {'Content-Length': '0'}, ''
+			response = HTTPStatus.NO_CONTENT, {'Content-Length': '0', }, ''
 		elif (host, path, ) in (
 			('detectportal.firefox.com', '/success.txt?ipv4', ),
 		):
-			response = HTTPStatus.OK, {"Content-type": "text/plain"}, 'success\n\r'
+			response = HTTPStatus.OK, {"Content-type": "text/plain", }, 'success\n\r'
 		else:
 			response = HTTPStatus.NOT_FOUND, None, None
 		log.info('get_response %s %s%s -> %s %s %s', client_address[0], host, path, *response)
