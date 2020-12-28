@@ -5,10 +5,11 @@ log.basicConfig(stream=stderr, level=log.INFO, format='%(asctime)s %(levelname)s
 from datetime import datetime
 from ipaddress import IPv4Address, IPv4Network
 from signal import signal, SIGINT
-#from random import choice
+from random import choice
 from subprocess import call
 from threading import Thread
-from time import ctime
+from time import ctime, sleep, time
+from email.utils import formatdate
 from http import HTTPStatus
 # fake bases:
 from dhcp import LevelThree as Dhcp
@@ -25,14 +26,8 @@ signal(SIGINT, signal_handler)
 
 class FakeDhcp(Dhcp):
 	client_macs = {
-		'48:5a:3f:14:d4:85': dict(
-			your_ip_address=IPv4Address('172.16.66.11'),
-			client_hardware_address='48:5a:3f:14:d4:85',
-			),
-		'14:cc:20:71:53:e0': dict(
-			your_ip_address=IPv4Address('172.16.66.111'),
-			client_hardware_address='14:cc:20:71:53:e0',
-			),
+		#'48:5a:3f:14:d4:85': dict(your_ip_address=IPv4Address('172.16.66.11'), ),
+		#'14:cc:20:71:53:e0': dict(your_ip_address=IPv4Address('172.16.66.111'), ),
 		}
 
 	client_ips = {
@@ -45,20 +40,22 @@ class FakeDhcp(Dhcp):
 		if client_hardware_address in self.client_macs:
 			config = self.client_macs[client_hardware_address]
 		else:
-			config = dict(
-				class_id= class_id,
-				client_id= client_id,
-				client_hardware_address= client_hardware_address,
-				your_ip_address = self.get_free_ip(),
-				timestamp=datetime.now(),
-				)
+			config = dict(your_ip_address=self.get_free_ip(), )
 			self.client_macs[client_hardware_address] = config
+		config['class_id'] = class_id
+		config['client_id'] = client_id
+		config['client_hardware_address'] = client_hardware_address
+		config['timestamp'] = datetime.now()
 		log.info('get_ip_for_mac %s -> %s', client_hardware_address, config, )
 		your_ip_address = config['your_ip_address']
+		self.client_ips[your_ip_address] = config
 		return your_ip_address
 
 	def get_free_ip(self):
-		pass
+		ip = choice(list(self.network.hosts()))
+		while ip in self.client_ips:
+			ip = choice(list(self.network.hosts()))
+		return ip
 
 
 class FakeDns(Dns):
@@ -84,14 +81,37 @@ class FakeHttp(Http):
 		# captive portal checks
 		if (host, path, ) in (
 			('connectivitycheck.gstatic.com', '/generate_204', ),
-			('www.google.com', '/gen_204', ),
 			('play.googleapis.com', '/generate_204', ),
 		):
-			response = HTTPStatus.NO_CONTENT, {'Content-Length': '0', }, ''
+			response = HTTPStatus.NO_CONTENT, {
+				'Content-Length': '0',
+				'Date': formatdate(time(), usegmt=True),
+				}, ''
+		elif (host, path, ) in (
+			('www.google.com', '/gen_204', ),
+		):
+			response = HTTPStatus.NO_CONTENT, {
+				'Content-Length': '0',
+				'Date': formatdate(time(), usegmt=True),
+				'Content-Type': 'text/html; charset=ISO-8859-1',
+				'P3P': 'CP="This is not a P3P policy! See g.co/p3phelp for more info."',
+				'Server': 'gws',
+				'X-XSS-Protection': '0',
+				'X-Frame-Options': 'SAMEORIGIN',
+				'Set-Cookie': 'NID=205=MjzCFJGqVviNCJwJvOWZzwBp4C5w5K45BKE7vjSK-Gl_wpKfqslpqY-ZL0su_r1Ml4KQMqKFTYGHLpGrQ2ZnUdfBSWUcFeI8lR2hilTTQgiIo1da4CQTJEbJxguk9MeEoGwdi6E-nPnzjIPaBxBZQ1cWmaMcwrxMYeF1scB0mL0; expires=Mon, 28-Jun-2021 22:36:22 GMT; path=/; domain=.google.com; HttpOnly',
+				}, ''
 		elif (host, path, ) in (
 			('detectportal.firefox.com', '/success.txt?ipv4', ),
 		):
-			response = HTTPStatus.OK, {"Content-type": "text/plain", }, 'success\n\r'
+			response = HTTPStatus.OK, {
+				"Content-type": "text/plain",
+				'Server': 'nginx',
+				'Content-Length': '8',
+				'Via': '1.1 google',
+				'Age': '14287',
+				'Date': formatdate(time(), usegmt=True),
+				'Cache-Control': 'public, must-revalidate, max-age=0, s-maxage=86400',
+				}, 'success\n\r'
 		else:
 			response = HTTPStatus.NOT_FOUND, None, None
 		log.info('get_response %s %s%s -> %s %s %s', client_address[0], host, path, *response)

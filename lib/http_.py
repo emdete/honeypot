@@ -20,8 +20,7 @@ class HttpHandler(BaseHTTPRequestHandler):
 		if headers:
 			for n,v in headers.items():
 				self.send_header(n, v)
-		self.send_header('Date', self.date_time_string())
-		self.end_headers()
+			self.end_headers()
 		if content:
 			self.wfile.write(content.encode())
 

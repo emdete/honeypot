@@ -341,7 +341,7 @@ class Dns_s(object):
 		while True:
 			try:
 				client_socket, address = self.socket.accept()
-				log.info('%s %s', client_socket, address)
+				log.debug('%s %s', client_socket, address)
 				client_socket.close()
 			except:
 				pass
