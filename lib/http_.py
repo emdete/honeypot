@@ -47,7 +47,6 @@ class Https(ThreadingHTTPServer):
 		self.socket = self.context.wrap_socket(self.socket, server_side=True)
 
 	def sni(self, sock, name, context):
-		log.info('sni from %s for https://%s', sock.getpeername()[0], name, )
 		if name:
 			chain_filename, cert_filename, privkey_filename = f'pemdb/{name}-ca-chain.pem', f'pemdb/{name}-ca-cert.pem', f'pemdb/{name}-ca.pem'
 			if not exists(chain_filename) or not exists(cert_filename) or not exists(privkey_filename):
