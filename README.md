@@ -89,9 +89,9 @@ DNS over HTTP(S) ist ein weiteres Problem. SNI bietet eine gute Möglichkeit
 bereits zu erkennen, was das Gerät vorhat, sodass diese Anfragen blockiert
 werden können.
 
-(Lizenz)[LICENSE]
+Lizenz
 --
 
-Meine Teile stehen unter der GPLv2. Teile die ich übernommen habe, stehen unter
+Meine Teile stehen unter der (GPLv2)[LICENSE]. Teile die ich übernommen habe, stehen unter
 der jeweiligen Lizenz, die Module und die jeweilige Herkunft sind dokumentiert.
 
