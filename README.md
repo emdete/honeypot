@@ -4,32 +4,37 @@ Honey Pot
 Schritt 1
 --
 
-Ein Wlan-Router mit OpenWRT, der als dump Switch agiert indem alle Interfaces
-gebridged sind. Eine Beschreibung für die Konfiguration ist hier:
+Vorraussetzung ist ein WLAN-Access-Point, der lediglich als Switch
+agiert, indem alle Interfaces gebridged sind. Ich nutze OpenWRT, eine
+Beschreibung für die Konfiguration ist hier:
 
 [Wireless Access Point / Dumb Access Point / Dumb AP](https://openwrt.org/docs/guide-user/network/wifi/dumbap)
 
-An diesen Router verbindet man einen Rechner per Ethernet und kann nun schauen,
-was die Geräte so treiben.
+An diesen AP verbindet man einen Rechner per Ethernet und kann nun schauen,
+was die Geräte so treiben:
+
+```
+tcpdump -i eth0 -vvv
+```
 
 Schritt 2
 --
 
 Als erstes melden sich die Geräte mit einer DHCP Anfrage. Diese muss mit einer
-validen IP, einem Standardgateway und einem Nameserver beantwortet werden.
+validen IP, einem Standard-Gateway und einem Namens-Server beantwortet werden.
 
-Ich habe keinen brauchbaren und funktionierenden DHCP Server gefunden, darum
-habe ich (unter Verwendung von Teilen aus anderen Projekten) einen eigenen
-erstellt.
+Ich habe keinen für mich brauchbaren und funktionierenden DHCP Server gefunden,
+darum habe ich (unter Verwendung von Teilen aus anderen Projekten) einen
+eigenen erstellt.
 
 In guter Python-Manier beginnt er zu arbeiten auf `serve_forever()` und ist in
-drei Schichten umgesetzt:
+drei Schichten aufgeteilt:
 
 - Senden & Empfangen der UDP Pakete
 - Decoden & Encoden der Pakete
-- Beantworten der Fragen der Geräte
+- Korrektes Beantworten der Fragen der Geräte
 
-Es fehlt fehlt die Schicht für die Vergabe der IPs, die im Hauptmodul
+Es beinhaltet nicht die Schicht für die Vergabe der IPs, die im Hauptmodul
 kontrolliert wird.
 
 `lib/dhcp.py`
@@ -39,8 +44,10 @@ Schritt 3
 
 Als nächstes versuchen die Geräte, Namen aufzulösen. Ein DNS Server leistet
 dies. Ein einigermassen brauchbares Modul existierte und findet Verwendung. Auch
-dieses startet mit `serve_forever()` und die wirkliche Zuordnung der IPs findet
-wiederum im Hauptmodul statt.
+dieses startet mit `serve_forever()`.
+
+Es beinhaltet nicht die Zuordnung der IPs, die wiederum im Hauptmodul
+stattfindet.
 
 Manche Geräte nutzen tcp domain-s (port 853). Dies ist (noch) nicht
 implementiert.
@@ -51,9 +58,10 @@ Schritt 4
 --
 
 Viele Geräte erfragen dann die Uhrzeit, also sollte NTP gesprochen werden.
-Wiederum startet der Dienst mit Aufruf von `serve_forever()` und erhält seine
-Antwort aus dem Hauptmodul. So kann jedem Gerät eine eigene Uhrzeit
-untergejubelt werden.
+Wiederum startet der Dienst mit Aufruf von `serve_forever()`.
+
+Es beinhaltet nicht die Rückgabe der Zeit, diese kommt wiederum aus dem
+Hauptmodul.
 
 `lib/ntp.py`
 
@@ -89,9 +97,12 @@ DNS over HTTP(S) ist ein weiteres Problem. SNI bietet eine gute Möglichkeit
 bereits zu erkennen, was das Gerät vorhat, sodass diese Anfragen blockiert
 werden können.
 
+IPv6 ist nicht beachtet.
+
 Lizenz
 --
 
-Meine Teile stehen unter der [GPLv2](LICENSE). Teile die ich übernommen habe, stehen unter
-der jeweiligen Lizenz, die Module und die jeweilige Herkunft sind dokumentiert.
+Meine Teile stehen unter der [GPLv2](LICENSE). Teile die ich übernommen habe,
+stehen unter der jeweiligen Lizenz, die Module und die jeweilige Herkunft sind
+dokumentiert.
 
