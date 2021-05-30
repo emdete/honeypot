@@ -7,7 +7,7 @@ Schritt 1
 Ein Wlan-Router mit OpenWRT, der als dump Switch agiert indem alle Interfaces
 gebridged sind. Eine Beschreibung für die Konfiguration ist hier:
 
-	[dumbap](https://openwrt.org/docs/guide-user/network/wifi/dumbap)
+[dumbap](https://openwrt.org/docs/guide-user/network/wifi/dumbap)
 
 An diesen Router verbindet man einen Rechner per Ethernet und kann nun schauen,
 was die Geräte so treiben.
