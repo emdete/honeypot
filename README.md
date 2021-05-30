@@ -16,7 +16,7 @@ Schritt 2
 --
 
 Als erstes melden sich die Geräte mit einer DHCP Anfrage. Diese muss mit einer
-validen IP und einem Standardgateway beantwortet werden.
+validen IP, einem Standardgateway und einem Nameserver beantwortet werden.
 
 Ich habe keinen brauchbaren und funktionierenden DHCP Server gefunden, darum
 habe ich (unter Verwendung von Teilen aus anderen Projekten) einen eigenen
@@ -29,7 +29,8 @@ drei Schichten umgesetzt:
 - Decoden & Encoden der Pakete
 - Beantworten der Fragen der Geräte
 
-Es fehlt die Vergabe der IPs, die im Hauptmodul kontrolliert wird.
+Es fehlt fehlt die Schicht für die Vergabe der IPs, die im Hauptmodul
+kontrolliert wird.
 
 Schritt 3
 --
@@ -37,9 +38,10 @@ Schritt 3
 Als nächstes versuchen die Geräte, Namen aufzulösen. Ein DNS Server leistet
 dies. Ein einigermassen brauchbares Modul existierte und findet Verwendung. Auch
 dieses startet mit `serve_forever()` und die wirkliche Zuordnung der IPs findet
-im Hauptmodul statt.
+wiederum im Hauptmodul statt.
 
-Manche Geräte nutzen tcp domain-s (port 853).
+Manche Geräte nutzen tcp domain-s (port 853). Dies ist (noch) nicht
+implementiert.
 
 Schritt 4
 --
@@ -56,5 +58,4 @@ Die Welt spricht HTTP und HTTPS. Als erstes Prüfen die Geräte ob das Netz
 wirklich Zugriff auf das Internet erlaubt. Dazu erfragen Android-Telefone
 (http://connectivitycheck.gstatic.com/generate_204) oder
 (http://google.com/generate_204) und erwarten einen HTTP-Statuscode von 204.
-
 
