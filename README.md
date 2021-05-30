@@ -9,7 +9,7 @@ gebridged sind. Eine Beschreibung für die Konfiguration ist hier:
 
 	[dumbap](https://openwrt.org/docs/guide-user/network/wifi/dumbap)
 
-An diesen Router verbindet man einen Rechner per Kabel und kann nun schauen,
+An diesen Router verbindet man einen Rechner per Ethernet und kann nun schauen,
 was die Geräte so treiben.
 
 Schritt 2
@@ -32,6 +32,8 @@ drei Schichten umgesetzt:
 Es fehlt fehlt die Schicht für die Vergabe der IPs, die im Hauptmodul
 kontrolliert wird.
 
+`lib/dhcp.py`
+
 Schritt 3
 --
 
@@ -43,6 +45,8 @@ wiederum im Hauptmodul statt.
 Manche Geräte nutzen tcp domain-s (port 853). Dies ist (noch) nicht
 implementiert.
 
+`lib/dns.py`
+
 Schritt 4
 --
 
@@ -51,11 +55,23 @@ Wiederum startet der Dienst mit Aufruf von `serve_forever()` und erhält seine
 Antwort aus dem Hauptmodul. So kann jedem Gerät eine eigene Uhrzeit
 untergejubelt werden.
 
+`lib/ntp.py`
+
 Schritt 5
 --
 
 Die Welt spricht HTTP und HTTPS. Als erstes Prüfen die Geräte ob das Netz
 wirklich Zugriff auf das Internet erlaubt. Dazu erfragen Android-Telefone
-(http://connectivitycheck.gstatic.com/generate_204) oder
-(http://google.com/generate_204) und erwarten einen HTTP-Statuscode von 204.
+[generate 204](http://connectivitycheck.gstatic.com/generate_204) oder
+[generate 204](http://google.com/generate_204) und erwarten einen
+HTTP-Statuscode von 204.
+
+Für TLS beinhaltet das https module die Möglichkeit, Zertifikate 'on the fly'
+zu generieren. Damit diese akzeptiert werden, muss auf dem Gerät das
+Root-Zertifikat `pemdb/open.net-ca-cert.cer` installiert werden.
+
+Das Modul http_ verwendet den `CertStore` des `mitmproxy.certs`, "mitmproxy"
+muss also installiert sein.
+
+`lib/http_.py`
 
