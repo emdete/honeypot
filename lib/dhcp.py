@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import logging as log
 from ipaddress import IPv4Address, IPv4Network
-from l2 import LevelTwo, Opcode, MessageType
+from dhcp_l2 import LevelTwo, Opcode, MessageType
 
 class LevelThree(LevelTwo):
 	def __init__(self, interface, server_ip_address, network, domain_name, lease_time=60*30):

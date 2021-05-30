@@ -2,7 +2,7 @@
 import logging as log
 from ipaddress import IPv4Address, IPv4Network
 from enum import IntEnum
-from l1 import LevelOne
+from dhcp_l1 import LevelOne
 
 class Opcode(IntEnum):
 	NONE = 0
