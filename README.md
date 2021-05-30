@@ -92,6 +92,6 @@ werden können.
 Lizenz
 --
 
-Meine Teile stehen unter der (GPLv2)[LICENSE]. Teile die ich übernommen habe, stehen unter
+Meine Teile stehen unter der [GPLv2](LICENSE). Teile die ich übernommen habe, stehen unter
 der jeweiligen Lizenz, die Module und die jeweilige Herkunft sind dokumentiert.
 
