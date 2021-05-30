@@ -78,13 +78,20 @@ muss also installiert sein.
 Nächste Schritte
 --
 
-Dieses Projekt ist bei weitem nicht fertig, das spannende kommt ja erst. Da die
-Geräte so die Zertifikate nicht akzeptieren sollten die 204-Anfragen
-aufgeleitet werden, um sie valide zu beantworten. Hierfür muss ein
+Dieses Projekt ist bei weitem nicht fertig, das spannende kommt ja erst.
+
+Da die Geräte so die Zertifikate nicht akzeptieren sollten die 204-Anfragen
+ausgeleitet werden, um sie valide zu beantworten. Hierfür kann ein
 transparenter SOCKS Proxy implementiert werden. Diese Anfragen werden nicht nur
 vom System selbst sondern auch zB vom Firefox gestellt.
 
 DNS over HTTP(S) ist ein weiteres Problem. SNI bietet eine gute Möglichkeit
 bereits zu erkennen, was das Gerät vorhat, sodass diese Anfragen blockiert
 werden können.
+
+(Lizenz)[LICENSE]
+--
+
+Meine Teile stehen unter der GPLv2. Teile die ich übernommen habe, stehen unter
+der jeweiligen Lizenz, die Module und die jeweilige Herkunft sind dokumentiert.
 
