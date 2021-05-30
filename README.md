@@ -75,3 +75,16 @@ muss also installiert sein.
 
 `lib/http_.py`
 
+Nächste Schritte
+--
+
+Dieses Projekt ist bei weitem nicht fertig, das spannende kommt ja erst. Da die
+Geräte so die Zertifikate nicht akzeptieren sollten die 204-Anfragen
+aufgeleitet werden, um sie valide zu beantworten. Hierfür muss ein
+transparenter SOCKS Proxy implementiert werden. Diese Anfragen werden nicht nur
+vom System selbst sondern auch zB vom Firefox gestellt.
+
+DNS over HTTP(S) ist ein weiteres Problem. SNI bietet eine gute Möglichkeit
+bereits zu erkennen, was das Gerät vorhat, sodass diese Anfragen blockiert
+werden können.
+
