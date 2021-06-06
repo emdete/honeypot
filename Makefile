@@ -12,10 +12,5 @@ run:
 	python3 -u ./honey.py
 
 dbg:
-	chgrp -R www-data .git
-	rsync \
-		--archive \
-		--verbose \
-		--delete \
-		.git/. littlun.emdete.de:/var/www/belphegor.emdete.de/honeypot/.
+	$(foreach remote,$(shell git remote),$(shell git push $(remote)))
 
