@@ -1,6 +1,11 @@
 Honey Pot
 ==
 
+Dies ist ein Wlan-Honigtopf, also etwas, das verlockend aussieht und klebrig
+ist. Geräte, die in dies Wlan einbuchen, sollen den Eindruck erhalten, Zugriff
+auf's Internet zu erhalten aber dabei so weit wie nur möglich beobachtet
+werden. Und natürlich so lange zu bleiben wie möglich.
+
 Schritt 1
 --
 
